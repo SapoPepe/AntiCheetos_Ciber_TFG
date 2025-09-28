@@ -307,14 +307,14 @@ sub upload_file {
     }
     close(F);
 
-    print "Uploading $file ...";
+    #print "Uploading $file ...";
     print $sock "file $id $lang $size $file\n";
     open(F,$file);
     while (<F>) {
 	print $sock $_;
     }
     close(F);
-    print "done.\n";
+    #print "done.\n";
 }
 
 

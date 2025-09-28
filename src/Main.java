@@ -50,6 +50,7 @@ public class Main {
                         break;
                     }
 
+
                     // Find the extension/language of problem files
                     List<String> extensions = moss.findProblemLanguage(downloads);
 
@@ -64,9 +65,10 @@ public class Main {
                                                 .map(path -> path.toAbsolutePath().toString())
                                                 .toList();
 
+                                        System.out.println("-----------------------------------------------------------------------------");
+                                        System.out.println("Submissions result of " + problem + " problem");
                                         moss.run(extensions.get(0), files);
                                         extensions.remove(0);
-                                        System.out.println("Submissions result of " + problem.toString() + " problem");
 
                                     } catch (Exception e){
                                         System.err.println("Files from " + problem + " couldn't be read");
@@ -75,45 +77,6 @@ public class Main {
                     } catch (Exception e){
                         System.err.println("Directory ./downloads can't be read");
                     }
-
-
-
-
-
-
-                    /*
-                    System.out.print("Insert path to directory: ");
-                    Path dirPath = Paths.get(scanner.nextLine());
-                    if (Files.isDirectory(dirPath)) {
-                        // Check if dir is empty
-                        boolean full;
-                        try {
-                            DirectoryStream<Path> dirStream = Files.newDirectoryStream(dirPath);
-                            full = dirStream.iterator().hasNext();
-                        } catch (Exception e) {
-                            full = false;
-                        }
-
-                        if (full) {
-                            System.out.print("Insert language: ");
-                            String lan = scanner.nextLine().toLowerCase();
-                            if (mossLanguages.contains(lan)) {
-                                List<String> files;
-                                try {
-                                    files = Files.list(dirPath)
-                                            .filter(Files::isRegularFile)
-                                            .map(path -> path.toAbsolutePath().toString())
-                                            .toList();
-                                } catch (Exception e){
-                                    files = new ArrayList<>();
-                                }
-
-                                moss.run(lan, files);
-                            } else System.err.println("Language not supported");
-                        } else System.err.println("Empty directory");
-                    } else System.err.println("Is not a directory: " + dirPath);
-                    */
-
                     break;
 
                 case 2:
