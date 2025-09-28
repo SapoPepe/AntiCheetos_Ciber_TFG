@@ -32,7 +32,8 @@ public class DomjudgeDownloader {
     }
 
 
-    public void downloader(String cid) throws Exception{
+    public Path downloader(String cid) throws Exception{
+        System.out.println("\r[*] Searching submissions for " + cid + "...");
         // GET judgements for the contest
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URI(this.baseApi + "/api/v4/contests/" + cid + "/judgements?strict=false"))
@@ -111,5 +112,7 @@ public class DomjudgeDownloader {
             }
 
         }
+
+        return Paths.get("domjudgeDownloads");
     }
 }
