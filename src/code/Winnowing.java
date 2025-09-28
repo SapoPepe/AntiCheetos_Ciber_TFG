@@ -15,13 +15,13 @@ public class Winnowing {
         this.win = win;
     }
 
-    public List<FinguerPrint> analyse(String docID, String text){
+    /*public List<FinguerPrint> analyse(String docID, String text){
         if(text.length() < k) return Collections.emptyList();
 
         List<Long> hashes = rollingHashes(text);
 
         return selectFingerPrints(docID, hashes);
-    }
+    }*/
 
 
     // Calculates the hashes of k-grams from the text using the rolling-hash algorithm
