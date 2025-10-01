@@ -1,3 +1,5 @@
+import imageAnalyzer.ImageAnalizer;
+import imageAnalyzer.Match;
 import moss.MossInvoker;
 import DomjudgeDownloader.DomjudgeDownloader;
 
@@ -13,20 +15,21 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.logging.log4j.Level;
+import org.apache.poi.util.Configurator;
 
 
 public class Main {
     public static void main(String[] args) {
         // Moss configuration
         MossInvoker moss = new MossInvoker();
-        Set<String> mossLanguages = Set.of("c", "c++", "c#", "java", "python", "mips assembly", "a8086 assembly");
 
         Scanner scanner = new Scanner(System.in);
 
         boolean exit = false;
 
         while (!exit) {
-            System.out.print("1. Domjudge file analysis\n2. Nothing\n3. Exit\nInsert option: ");
+            System.out.print("1. Domjudge file analysis\n2. Image file analysis\n3. Exit\nInsert option: ");
             int option = scanner.nextInt();
             scanner.nextLine();
             switch (option) {
@@ -80,6 +83,21 @@ public class Main {
                     break;
 
                 case 2:
+                    ImageAnalizer ia = new ImageAnalizer();
+                    try{
+                        List<Match> matches = ia.analyzer();
+                        System.out.println("--------------------------------");
+                        System.out.println("> RESULTS");
+                        System.out.println("--------------------------------");
+                        for (var m : matches) {
+                            System.out.println(m);
+                        }
+                        System.out.println("> End of results");
+                    } catch (Exception e){
+                        System.err.println("[ERROR] Could not execute image analyzer");
+                    }
+
+                    break;
 
                 case 4:
                     System.out.print("Bye");
