@@ -114,6 +114,7 @@ public class ImageAnalizer {
 
         // Analysis
         List<Match> matches = new ArrayList<>();
+        Set<String> processedHashes = new HashSet<>();
         for(Student s : students){
             for(Map.Entry<String, String> e : s.files().entrySet()){
                 String hash = e.getKey();
@@ -124,10 +125,13 @@ public class ImageAnalizer {
                     matches.add(new Match(s.path(), hash, e.getValue(), Set.of(this.existingHashes.get(hash))));
                 }
 
-                if(this.currentHashes.get(hash).size() > 1){
-                    HashSet<String> otherNames = new HashSet<>(this.currentHashes.get(hash));
+                Set<String> fileHashes = this.currentHashes.get(hash);
+                if(fileHashes.size() > 1 && !processedHashes.contains(hash)){
+                    HashSet<String> otherNames = new HashSet<>(fileHashes);
                     otherNames.remove(e.getValue());
+
                     matches.add(new Match(s.path(), hash, e.getValue(), otherNames));
+                    processedHashes.add(hash);
                 }
             }
         }
