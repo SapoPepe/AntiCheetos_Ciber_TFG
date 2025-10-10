@@ -38,36 +38,41 @@ public class ImageAnalizer {
 
     private String currentPath = new File("").getAbsolutePath();
 
-    public List<Match> analyzer() throws IOException {
+    public List<Match> analyzer() throws Exception {
         Configurator.setLevel("org.apache.pdfbox", Level.ERROR);
-
         Scanner scanner = new Scanner(System.in);
+
+        // Analysis options
+        System.out.print("Analysis options:\n\t1) Data + metadata\n\t2) Data\n\t3) SIFT\nOption: ");
+        int vision = scanner.nextInt();
+        scanner.nextLine();
+        while(vision < 1 || vision > 3){
+            System.out.print("[ERROR] Invalid option. Choose an other: ");
+            vision = scanner.nextInt();
+        }
+
+
         System.out.print("Path to students dir: ");
         this.filesPath = scanner.nextLine();
 
+
+        // Excluded images
         System.out.print("Exclude some images (y/n): ");
         char decision = scanner.nextLine().charAt(0);
         while(decision != 'y' && decision != 'n'){
             System.out.print("[ERROR] Invalid option. Exclude some images (y/n): ");
             decision = scanner.nextLine().charAt(0);
         }
-
-        // If images should be compared only by it's raw data or by data + metadata
-        System.out.print("Visual comparison in images (y/n): ");
-        char vision = scanner.nextLine().charAt(0);
-        while(vision != 'y' && vision != 'n'){
-            System.out.print("[ERROR] Invalid option. Visual Comparation (y/n): ");
-            vision = scanner.nextLine().charAt(0);
-        }
-
-        // If there is a dir with images that must be excluded
         if(decision == 'y'){
             System.out.print("Path excluded images: ");
             this.excludedImgPath = scanner.nextLine();
-            this.excludedHashes = parseFolder(new File(this.excludedImgPath), vision=='y');
-            System.out.format("[*] Loaded %s excluded files in %s %n", this.excludedHashes.size(), this.excludedImgPath);
+            if(vision!=3){
+                this.excludedHashes = parseFolder(new File(this.excludedImgPath), vision);
+                System.out.format("[*] Loaded %s excluded files in %s %n", this.excludedHashes.size(), this.excludedImgPath);
+            }
         }
 
+        // Reference images
         // PDFs from which images will be extracted and used to compare against, but they themselves should not be compared against the rest
         System.out.print("Extract image references from other files (y/n): ");
         decision = scanner.next().charAt(0);
@@ -80,8 +85,10 @@ public class ImageAnalizer {
             this.referenceImgPath = scanner.nextLine();
             extractImages(this.referenceImgPath);
             System.out.println("[*] Img extraction of reference files completed");
-            this.existingHashes = parseFolder(new File(this.referenceImgPath), vision=='y');
-            System.out.format("[*] Analyzed %s existing files in %s %n", this.existingHashes.size(), this.referenceImgPath);
+            if(vision!=3) {
+                this.existingHashes = parseFolder(new File(this.referenceImgPath), vision);
+                System.out.format("[*] Analyzed %s existing files in %s %n", this.existingHashes.size(), this.referenceImgPath);
+            }
         }
 
 
@@ -97,10 +104,15 @@ public class ImageAnalizer {
         ArrayList<Student> students = new ArrayList<>(studentFolders.size());
         for (File folder : studentFolders) {
             extractImages(folder);
-            students.add(loadStudent(folder, vision=='y'));
+            students.add(loadStudent(folder, vision));
         }
         System.out.println("[*] Students loaded");
 
+        // SIFT analysed, added as module for the original code
+        if (vision == 3) {
+            SiftAnalyzer sift = new SiftAnalyzer();
+            return sift.analyse(this.filesPath, this.excludedImgPath, this.referenceImgPath);
+        }
 
         // Prepare dataset
         for(Student s : students){
@@ -219,13 +231,21 @@ public class ImageAnalizer {
 
 
     // Return Map<hash, filePath>
-    private Map<String, String> parseFolder(File path, boolean visualComparation){
+    private Map<String, String> parseFolder(File path, int method){
         Iterable<File> files = FileUtils.listFiles(path, new String[]{"jpg", "png", "jpeg"}, true);
 
         Map<String, String> result = new HashMap<>();
         for(File img : files){
-            HashedFile hashedFile = visualComparation ? sha1Img(img) : sha1File(img);
-            if(!hashedFile.hash.equals(EMPTY_SHA1)) result.put(hashedFile.hash(), hashedFile.path());
+            // HashedFile hashedFile = visualComparation ? sha1Img(img) : sha1File(img);
+            HashedFile hashedFile = switch (method) {
+                // Data + metadata
+                case 1 -> sha1File(img);
+                // Data
+                case 2 -> sha1Img(img);
+                default -> null;
+            };
+
+            if(hashedFile != null && !hashedFile.hash.equals(EMPTY_SHA1)) result.put(hashedFile.hash(), hashedFile.path());
         }
 
         return result;
@@ -301,7 +321,7 @@ public class ImageAnalizer {
 
 
 
-    private Student loadStudent(File file, boolean vision) {
+    private Student loadStudent(File file, int vision) {
         Map<String, String> hashes = parseFolder(file, vision);
         return new Student(file.getName(), hashes);
     }
