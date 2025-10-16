@@ -1,4 +1,4 @@
-package DomjudgeDownloader;
+package domjudgeDownloader;
 import java.time.ZonedDateTime;
 
 public class SubmissionInfo {

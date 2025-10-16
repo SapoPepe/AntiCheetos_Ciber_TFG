@@ -1,4 +1,4 @@
-package DomjudgeDownloader;
+package domjudgeDownloader;
 
 import java.io.InputStream;
 import java.net.URI;
