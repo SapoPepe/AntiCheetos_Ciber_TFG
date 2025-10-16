@@ -1,13 +1,14 @@
 package imageAnalyzer;
 
 
+import imageAnalyzer.sift.PathUtils;
+import imageAnalyzer.sift.SiftAnalyzer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDResources;
-import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.graphics.PDXObject;
 import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
@@ -164,6 +165,15 @@ public class ImageAnalizer {
         Iterable<File> files = FileUtils.listFiles(f, new String[]{"pdf", "docx"}, false);
 
         for(File file : files){
+            if(!PathUtils.isCompatiblePath(file)){
+                System.err.format("[WARN] Path for \"%s\" contains no-ASCII characters. Can cause errors in sift analyse.%n", file.getAbsolutePath());
+            }
+
+            if(!PathUtils.isCompatibleFileName(file)){
+                System.err.format("[WARN] File \"%s\" contains no-ASCII characters, it will be sanitize%n", file.getName());
+                file = PathUtils.sanitizeName(file);
+            }
+
             String ext = FilenameUtils.getExtension(file.getName()).toLowerCase();
             try {
                 if(ext.equals("pdf")){

@@ -1,5 +1,6 @@
-package imageAnalyzer;
+package imageAnalyzer.sift;
 
+import imageAnalyzer.Match;
 import org.apache.commons.io.FileUtils;
 import org.bytedeco.opencv.opencv_core.*;
 import org.bytedeco.opencv.opencv_features2d.DescriptorMatcher;
@@ -11,10 +12,10 @@ import java.util.*;
 
 public class SiftAnalyzer {
     // Threshold for considering a match as "good" according to the Lowe ratio test.
-    private static final float RATIO_THRESH = 0.8f;
+    private static final float RATIO_THRESH = 0.75f;
     // Min coincidences between images to consider them equal
     // Can be changed
-    private static final int MIN_GOOD_MATCHES = 50;
+    private static final int MIN_GOOD_MATCHES = 30;
 
     // Saves internal information for each image (path to img, SIFT descriptor)
     private record SiftData(String path, Mat descriptors) {}
@@ -22,7 +23,10 @@ public class SiftAnalyzer {
 
     public List<Match> analyse(String studentsPath, String excludedPath, String referencePath) {
         System.out.println("[*] Starting SIFT analyse...");
+        System.out.println("[INFO] Can take some minutes to initialise");
         SIFT sift = SIFT.create();
+
+        System.out.println("[*] Loading images...");
 
         // Load and process all images
         List<SiftData> studentImages = loadImages(studentsPath, sift);
@@ -75,7 +79,7 @@ public class SiftAnalyzer {
 
 
 
-        if(!referencePath.isEmpty()) {
+        if(referencePath != null) {
             System.out.println("[*] Comparing student images with reference images...");
 
             long totalReferencePairs = (long) studentImages.size() * referenceImages.size();

@@ -1,4 +1,4 @@
-package DomjudgeDownloader;
+package domjudgeDownloader;
 
 public class ProblemTeamKey {
     private final String problemId;
