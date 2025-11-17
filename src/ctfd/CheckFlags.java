@@ -91,6 +91,8 @@ public class CheckFlags {
 
     private void checkCopies(List<FlagCopied> copies, List<Submission> submissions){
         for(Submission s : submissions){
+            if(!s.correct) continue;
+
             // Filter submissions
             String flag = s.submitted_flag();
             int id_user = s.id_user();
