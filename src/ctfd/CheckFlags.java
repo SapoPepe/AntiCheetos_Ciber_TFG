@@ -3,6 +3,9 @@ package ctfd;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -10,6 +13,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CheckFlags {
     private record Challenge(int id, String name){}
@@ -29,13 +34,14 @@ public class CheckFlags {
 
         System.out.println("[*] Checking copies");
         for(Challenge c : challenges){
-            // All submissions --> divide correct and incorrect
-            // For each correct, check with all incorrect (do not check incorrect submissions from the same user)
-            List<Submission> submissionList = getSubmissionsForChallenge(c.id(), api_key, url_base);
-            checkCopies(copies, submissionList);
+            // If challenge has dynamic flags
+            if(getFlagType(url_base, api_key, c)){
+                // All submissions --> divide correct and incorrect
+                // For each correct, check with all corrects (do not check correct submissions from the same user)
+                List<Submission> submissionList = getSubmissionsForChallenge(c.id(), api_key, url_base);
+                checkCopies(copies, submissionList);
+            }
         }
-
-
         return copies;
     }
 
@@ -71,17 +77,26 @@ public class CheckFlags {
 
 
     private List<Submission> getSubmissionsForChallenge(int id_challenge, String api_key, String url_base) throws Exception {
-        try {
-            HttpResponse<String> response = apiRequest(url_base, "/submissions?challenge_id=" + id_challenge, api_key);
-            JSONObject jsonResponse = new JSONObject(response.body());
-            JSONArray jsonSubmissions = jsonResponse.getJSONArray("data");
+        List<Submission> submissions = new ArrayList<>();
+        int page = 1;
 
-            List<Submission> submissions = new ArrayList<>();
-            for(int i=0; i< jsonResponse.length(); i++){
-                JSONObject o = jsonSubmissions.getJSONObject(i);
-                Integer id_team = o.isNull("team_id") ? null : o.getInt("team_id");
-                String name_team = o.isNull("team") ? null : o.getJSONObject("team").getString("name");
-                submissions.add(new Submission(o.getInt("id"), o.getInt("challenge_id"), o.getJSONObject("challenge").getString("name"), o.getInt("user_id"), o.getJSONObject("user").getString("name"), id_team, name_team, o.getString("provided"), o.getString("type").equals("correct")));
+        try {
+            while(true) {
+                HttpResponse<String> response = apiRequest(url_base, "/submissions?challenge_id=" + id_challenge + "&page=" + page, api_key);
+                JSONObject jsonResponse = new JSONObject(response.body());
+                JSONArray jsonSubmissions = jsonResponse.getJSONArray("data");
+
+                for (int i = 0; i < jsonSubmissions.length(); i++) {
+                    JSONObject o = jsonSubmissions.getJSONObject(i);
+                    Integer id_team = o.isNull("team_id") ? null : o.getInt("team_id");
+                    String name_team = o.isNull("team") ? null : o.getJSONObject("team").getString("name");
+                    submissions.add(new Submission(o.getInt("id"), o.getInt("challenge_id"), o.getJSONObject("challenge").getString("name"), o.getInt("user_id"), o.getJSONObject("user").getString("name"), id_team, name_team, o.getString("provided"), o.getString("type").equals("correct")));
+                }
+
+                page++;
+
+                // When the next page is null it indicates that there is not more submissions
+                if(jsonResponse.getJSONObject("meta").getJSONObject("pagination").optString("next", null) == null) break;
             }
             return submissions;
         } catch (IOException e) {
@@ -97,24 +112,53 @@ public class CheckFlags {
             String flag = s.submitted_flag();
             int id_user = s.id_user();
             List<Submission> matches = submissions.stream()
-                    .filter(sub -> !sub.correct)
+                    .filter(sub -> sub.correct)
                     .filter(sub -> sub.submitted_flag().equals(flag))
                     .filter(sub -> sub.id_user() != id_user)
                     .toList();
 
             // Add to copies
             for(Submission sub : matches){
-                copies.add(new FlagCopied(
-                        id_user,                // ID userA
-                        s.name_user(),          // Name userA
-                        sub.id_user(),          // ID userB
-                        sub.name_user(),        // Name userB
-                        s.id_challenge(),       // ID challenge
-                        s.name_challenge(),     // Name challenge
-                        sub.submitted_flag()    // Copied flag
-                ));
+                // Add only if userA's ID is smaller to avoid duplicates like (A,B) and (B,A)
+                if(id_user < sub.id_user) {
+                    copies.add(new FlagCopied(
+                            id_user,                // ID userA
+                            s.name_user(),          // Name userA
+                            sub.id_user(),          // ID userB
+                            sub.name_user(),        // Name userB
+                            s.id_challenge(),       // ID challenge
+                            s.name_challenge(),     // Name challenge
+                            sub.submitted_flag()    // Copied flag
+                    ));
+                }
             }
+        }
 
+
+    }
+
+
+    private boolean getFlagType(String url_base, String api_key, Challenge c) throws Exception {
+        Pattern regexPattern = Pattern.compile("[\\Q<([{^=$!|]})?*+.>\\E\\\\]");
+        String endpoint = "/challenges/" + c.id() + "/flags";
+        try {
+            HttpResponse<String> response = apiRequest(url_base, endpoint, api_key);
+            JSONObject jsonResponse = new JSONObject(response.body());
+
+            if(!jsonResponse.getJSONArray("data").getJSONObject(0).getString("type").equals("regex")) return false;
+
+            String flag = jsonResponse.getJSONArray("data").getJSONObject(0).getString("content");
+
+            // Delete first and last {} of the flag --- URJC{best_flags} -> URJCbest_flag
+            flag = flag.replaceFirst("\\{", "");
+            flag = flag.substring(0, flag.length()-1);
+
+            Matcher searcher = regexPattern.matcher(flag);
+            return searcher.find();
+
+
+        } catch (IOException e) {
+            throw new Exception(e.getMessage());
         }
     }
 }
