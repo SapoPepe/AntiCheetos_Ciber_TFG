@@ -27,7 +27,6 @@ public class CheckFlags {
         // Get all challenges
         // For each challenge check if userA has introduced a flag from userB
         // Copy detected --> add to list of FlagCopied
-
         System.out.println("[*] Getting challenges");
         List<FlagCopied> copies = new ArrayList<>();
         List<Challenge> challenges = getAllChallenges(api_key, url_base);
@@ -42,6 +41,8 @@ public class CheckFlags {
                 checkCopies(copies, submissionList);
             }
         }
+
+
         return copies;
     }
 
@@ -121,14 +122,28 @@ public class CheckFlags {
             for(Submission sub : matches){
                 // Add only if userA's ID is smaller to avoid duplicates like (A,B) and (B,A)
                 if(id_user < sub.id_user) {
+                    // Calculate who is the copicat
+                    String dynamicA = calculateDynamic(s.id_challenge(), id_user);
+                    String dynamicB = calculateDynamic(s.id_challenge(), sub.id_user());
+                    String submitted_flag = sub.submitted_flag();
+
+                    // If submitted_flag contains the dynamic, it means that userA is the owner of the flag. Otherwise, is userB
+                    //String copicat = submitted_flag.contains(dynamic) ? sub.name_user() : s.name_user();
+
+                    // Si la flag no es de ninguno de los dos usuarios, es una flag antigua calculada de otra forma y no cuenta
+                    if(!submitted_flag.contains(dynamicA) && !submitted_flag.contains(dynamicB)) continue;
+
+                    String copycat = submitted_flag.contains(dynamicA) ? sub.name_user() : s.name_user();
+
                     copies.add(new FlagCopied(
+                            copycat,
                             id_user,                // ID userA
                             s.name_user(),          // Name userA
                             sub.id_user(),          // ID userB
                             sub.name_user(),        // Name userB
                             s.id_challenge(),       // ID challenge
                             s.name_challenge(),     // Name challenge
-                            sub.submitted_flag()    // Copied flag
+                            submitted_flag          // Copied flag
                     ));
                 }
             }
@@ -161,4 +176,36 @@ public class CheckFlags {
             throw new Exception(e.getMessage());
         }
     }
+
+
+    private String calculateDynamic(int cId, int tId){
+        String inputString = String.format("%d,%d", tId, cId);
+
+        // Cold beer :-)
+        int seed = 0;
+        int h1 = 0xdeadbeef ^ seed;
+        int h2 = 0x41c6ce57 ^ seed;
+
+        for (int i = 0; i < inputString.length(); i++) {
+            char ch = inputString.charAt(i);
+            // Use the equivalent of 32 bits with sign for big numbers
+            h1 = (h1 ^ ch) * -1640531535; // Equal to 2654435761
+            h2 = (h2 ^ ch) * 1597334677;
+        }
+
+        h1 = (h1 ^ (h1 >>> 16)) * -2048144789;  // Equal to 2246822507
+        h1 ^= (h2 ^ (h2 >>> 13)) * -1028477387; // Equal to 3266489909
+        h2 = (h2 ^ (h2 >>> 16)) * -2048144789;  // Equal to 2246822507
+        h2 ^= (h1 ^ (h1 >>> 13)) * -1028477387; // Equal to 3266489909
+
+        long h1Unsigned = Integer.toUnsignedLong(h1);
+        long hashResult = (4294967296L * (2097151 & h2)) + h1Unsigned;
+
+        String hexResult = Long.toHexString(hashResult);
+
+        String paddedHex = "0000000000" + hexResult;
+        return paddedHex.substring(paddedHex.length() - 10);
+
+    }
+
 }
