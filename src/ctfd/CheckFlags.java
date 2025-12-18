@@ -3,9 +3,6 @@ package ctfd;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -15,10 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.time.Instant;
 
 public class CheckFlags {
     private record Challenge(int id, String name){}
-    private record Submission(int id_sub, int id_challenge, String name_challenge, int id_user, String name_user, Integer id_team, String name_team, String submitted_flag, boolean correct){}
+    private record Submission(int id_sub, int id_challenge, String name_challenge, int id_user, String name_user, Integer id_team, String name_team, String submitted_flag, boolean correct, String date){}
 
     private static final HttpClient client = HttpClient.newHttpClient();
 
@@ -41,7 +39,6 @@ public class CheckFlags {
                 checkCopies(copies, submissionList);
             }
         }
-
 
         return copies;
     }
@@ -91,7 +88,7 @@ public class CheckFlags {
                     JSONObject o = jsonSubmissions.getJSONObject(i);
                     Integer id_team = o.isNull("team_id") ? null : o.getInt("team_id");
                     String name_team = o.isNull("team") ? null : o.getJSONObject("team").getString("name");
-                    submissions.add(new Submission(o.getInt("id"), o.getInt("challenge_id"), o.getJSONObject("challenge").getString("name"), o.getInt("user_id"), o.getJSONObject("user").getString("name"), id_team, name_team, o.getString("provided"), o.getString("type").equals("correct")));
+                    submissions.add(new Submission(o.getInt("id"), o.getInt("challenge_id"), o.getJSONObject("challenge").getString("name"), o.getInt("user_id"), o.getJSONObject("user").getString("name"), id_team, name_team, o.getString("provided"), o.getString("type").equals("correct"), o.getString("date")));
                 }
 
                 page++;
@@ -117,6 +114,25 @@ public class CheckFlags {
                     .filter(sub -> sub.submitted_flag().equals(flag))
                     .filter(sub -> sub.id_user() != id_user)
                     .toList();
+
+
+            // If matches is null and the submitted flags doesn't match with the real user flag, it indicates he has tried a random string and was accepted
+            Instant submissionInstant = java.time.Instant.parse(s.date());
+            Instant cutoff = java.time.Instant.parse("2025-09-01T00:00:00Z");
+
+            if (matches.isEmpty() && !flag.contains(calculateDynamic(s.id_challenge(), id_user)) && !submissionInstant.isBefore(cutoff)) {
+                copies.add(new FlagCopied(
+                        null,
+                        id_user,
+                        s.name_user(),
+                        null,
+                        null,
+                        s.id_challenge(),
+                        s.name_challenge(),
+                        flag
+                ));
+            }
+
 
             // Add to copies
             for(Submission sub : matches){
@@ -147,6 +163,9 @@ public class CheckFlags {
                     ));
                 }
             }
+
+
+
         }
 
 
