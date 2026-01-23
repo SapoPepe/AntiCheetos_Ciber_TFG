@@ -84,7 +84,7 @@ public class Main {
                         for (var m : matches) {
                             System.out.println(m);
                         }
-                        System.out.println("> End of results");
+                        System.out.println("--------------------------------\n> End of results");
                     } catch (Exception e){
                         System.err.println("[ERROR] Could not execute image analyzer");
                     }
