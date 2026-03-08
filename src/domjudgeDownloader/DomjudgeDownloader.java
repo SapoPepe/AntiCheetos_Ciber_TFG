@@ -33,7 +33,6 @@ public class DomjudgeDownloader {
 
 
     public Path downloader(String cid) throws Exception{
-        /*
         System.out.println("\r[*] Searching submissions for " + cid + "...");
         // GET judgements for the contest
         HttpRequest request = HttpRequest.newBuilder()
@@ -113,7 +112,7 @@ public class DomjudgeDownloader {
             }
 
         }
-        */
+
         return Paths.get("domjudgeDownloads");
     }
 }

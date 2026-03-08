@@ -60,21 +60,6 @@ public class MossInvoker {
                             System.err.println("Files from " + problem + " couldn't be read");
                         }
                     });
-            /*
-            Path problem = problems.filter(Files::isDirectory)
-                    .findFirst()
-                    .orElseThrow(() -> new Exception("No problems to check"));
-
-            try (Stream<Path> files = Files.list(problem)) {
-                Path firstFile = files.filter(Files::isRegularFile)
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("No files in " + problem));
-
-                String extension = FilenameUtils.getExtension(firstFile.getFileName().toString());
-                System.out.println("Primer archivo: " + firstFile.getFileName() + " (ext: " + extension + ")");
-
-                languages.add(mapExtensionToMoss(extension));
-            }*/
         } catch (Exception e) {
             System.err.println("Directory ./downloads can't be read");
         }

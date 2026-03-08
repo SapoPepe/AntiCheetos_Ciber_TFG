@@ -208,14 +208,14 @@ public class CheckFlags {
         for (int i = 0; i < inputString.length(); i++) {
             char ch = inputString.charAt(i);
             // Use the equivalent of 32 bits with sign for big numbers
-            h1 = (h1 ^ ch) * -1640531535; // Equal to 2654435761
+            h1 = (h1 ^ ch) * -1640531535; // = 2654435761
             h2 = (h2 ^ ch) * 1597334677;
         }
 
-        h1 = (h1 ^ (h1 >>> 16)) * -2048144789;  // Equal to 2246822507
-        h1 ^= (h2 ^ (h2 >>> 13)) * -1028477387; // Equal to 3266489909
-        h2 = (h2 ^ (h2 >>> 16)) * -2048144789;  // Equal to 2246822507
-        h2 ^= (h1 ^ (h1 >>> 13)) * -1028477387; // Equal to 3266489909
+        h1 = (h1 ^ (h1 >>> 16)) * -2048144789;  // = 2246822507
+        h1 ^= (h2 ^ (h2 >>> 13)) * -1028477387; // = 3266489909
+        h2 = (h2 ^ (h2 >>> 16)) * -2048144789;  // = 2246822507
+        h2 ^= (h1 ^ (h1 >>> 13)) * -1028477387; // = 3266489909
 
         long h1Unsigned = Integer.toUnsignedLong(h1);
         long hashResult = (4294967296L * (2097151 & h2)) + h1Unsigned;
