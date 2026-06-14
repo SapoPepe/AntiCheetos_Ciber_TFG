@@ -5,9 +5,7 @@ import org.apache.commons.io.FilenameUtils;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class MossInvoker {
@@ -41,32 +39,39 @@ public class MossInvoker {
         }
     }
 
-    public List<String> findProblemLanguage(Path downloads){
-        List<String> languages = new ArrayList<>();
+    public Map<Path, List<String>> findProblemLanguage(Path downloads){
+        Map<Path, List<String>> problemLanguages = new LinkedHashMap<>();
 
         try (Stream<Path> problems = Files.list(downloads)){
             problems.filter(Files::isDirectory)
                     .forEach(problem -> {
                         try (Stream<Path> files = Files.list(problem)){
-                            Optional<Path> firstFile = files.filter(Files::isRegularFile)
-                                    .findFirst();
+                            List<String> foundLanguages = new ArrayList<>();
 
-                            firstFile.ifPresent(file -> {
-                                String extension = FilenameUtils.getExtension(file.getFileName().toString());
-                                languages.add(mapExtensionToMoss(extension));
-                            });
+                            files.filter(Files::isRegularFile)
+                                    .forEach(file -> {
+                                        String extension = FilenameUtils.getExtension(file.getFileName().toString());
+                                        String language = mapExtensionToMoss(extension);
+                                        if(language != null && !foundLanguages.contains(language)){
+                                            foundLanguages.add(language);
+                                        }
+                                    });
+
+                            if(!foundLanguages.isEmpty()){
+                                problemLanguages.put(problem, foundLanguages);
+                            }
 
                         } catch (Exception e){
-                            System.err.println("Files from " + problem + " couldn't be read");
+                            System.err.println("Files from " + problem.getFileName() + " couldn't be read");
                         }
                     });
         } catch (Exception e) {
             System.err.println("Directory ./downloads can't be read");
         }
-        return languages;
+        return problemLanguages;
     }
 
-    private String mapExtensionToMoss(String extension){
+    public String mapExtensionToMoss(String extension){
         return switch (extension.toLowerCase()) {
             case "c" -> "c";
             case "cpp" -> "cc";

@@ -1,23 +1,29 @@
 import ctfd.CheckFlags;
 import ctfd.FlagCopied;
+import domjudgeDownloader.SsoLogin;
 import imageAnalyzer.ImageAnalizer;
 import imageAnalyzer.Match;
 import moss.MossInvoker;
 import domjudgeDownloader.DomjudgeDownloader;
+import org.apache.commons.io.FilenameUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
 
 public class Main {
     public static void main(String[] args) {
-        // Moss configuration
+        //System.setProperty("log4j.skipJansi", "true");
+        //System.setProperty("log4j2.disable.reflection", "true");
+
         MossInvoker moss = new MossInvoker();
 
-        Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
 
         boolean exit = false;
 
@@ -28,51 +34,70 @@ public class Main {
             scanner.nextLine();
             switch (option) {
                 case 1:
-                    System.out.print("Base URL (ej: https://yourhost/domjudge): ");
+                    System.out.println("[INFO] Is needed the MOSS script in the same directory as AntiCheetos");
+                    System.out.print("Base URL (ej: https://yourhost.com): ");
                     String baseApi = scanner.nextLine();
-                    System.out.print("Contest ID (cid): ");
+                    System.out.print("External contest ID: ");
                     String cid = scanner.nextLine();
-                    System.out.print("User: ");
-                    String user = scanner.nextLine();
-                    System.out.print("Password: ");
-                    String pass = scanner.nextLine();
 
-                    DomjudgeDownloader domjudge = new DomjudgeDownloader(baseApi, user, pass);
+                    String[] cookies = SsoLogin.getCookies(baseApi);
+                    if (cookies == null) {
+                        System.err.println("[ERROR] Error. Could not get cookies");
+                        break;
+                    }
+
+                    DomjudgeDownloader domjudge = new DomjudgeDownloader(baseApi, cookies[0], cookies[1]);
 
                     Path downloads;
                     try {
                         downloads = domjudge.downloader(cid);
                     } catch (Exception e){
-                        System.err.println("Error while domjudgeDownloader working\n" + e.getMessage());
+                        System.err.println("[ERROR] Error while domjudgeDownloader working\n" + e.getMessage());
                         break;
                     }
 
 
-                    // Find the extension/language of problem files
-                    List<String> extensions = moss.findProblemLanguage(downloads);
+                    // Find the language of problem files (one problem might have more than 1 language)
+                    Map<Path, List<String>> problemLanguages = moss.findProblemLanguage(downloads);
 
-                    // For each problem we generate a petition to moss
+                    // For each problem we generate petitions to moss
                     try(Stream<Path> problems = Files.list(downloads)){
                         problems.filter(Files::isDirectory)
                                 .forEach(problem -> {
-                                    List<String> files;
-                                    try {
-                                        files = Files.list(problem)
-                                                .filter(Files::isRegularFile)
-                                                .map(path -> path.toAbsolutePath().toString())
-                                                .toList();
+                                    List<String> languages = problemLanguages.get(problem);
+                                    if(languages == null || languages.isEmpty()) return;
 
-                                        System.out.println("-----------------------------------------------------------------------------");
-                                        System.out.println("Submissions result of " + problem + " problem");
-                                        moss.run(extensions.get(0), files);
-                                        extensions.remove(0);
+                                    try (Stream<Path> allFiles = Files.list(problem)){
+                                        // Get all files in the problem directory
+                                        List<Path> allFilesList = allFiles.filter(Files::isRegularFile).toList();
+
+                                        // For each language, filter files by extension and call MOSS
+                                        for(String language : languages){
+                                            // Filter files that match this language
+                                            List<String> filesForLanguage = allFilesList.stream()
+                                                    .filter(file -> {
+                                                        String extension = FilenameUtils.getExtension(file.getFileName().toString());
+                                                        String mappedLanguage = moss.mapExtensionToMoss(extension);
+                                                        return language.equals(mappedLanguage);
+                                                    })
+                                                    .map(path -> path.toAbsolutePath().toString())
+                                                    .toList();
+
+                                            // Only call MOSS if there are files for this language
+                                            if(!filesForLanguage.isEmpty()){
+                                                System.out.println("-----------------------------------------------------------------------------");
+                                                System.out.println("Submissions result of \"" + problem.getFileName() + "\" [" + language + "]");
+                                                System.out.println("Files to analyze: " + filesForLanguage.size());
+                                                moss.run(language, filesForLanguage);
+                                            }
+                                        }
 
                                     } catch (Exception e){
-                                        System.err.println("Files from " + problem + " couldn't be read");
+                                        System.err.println("[ERROR] Files from " + problem.getFileName() + " couldn't be read");
                                     }
                                 });
                     } catch (Exception e){
-                        System.err.println("Directory ./downloads can't be read");
+                        System.err.println("[ERROR] Directory ./downloads can't be read");
                     }
                     break;
 
@@ -80,13 +105,14 @@ public class Main {
                     ImageAnalizer ia = new ImageAnalizer();
                     try{
                         List<Match> matches = ia.analyzer();
-                        System.out.println("--------------------------------\n> RESULTS\n--------------------------------");
+                        System.out.println("----------------------------------------\n> RESULTS\n----------------------------------------");
                         for (var m : matches) {
                             System.out.println(m);
                         }
-                        System.out.println("--------------------------------\n> End of results");
+                        System.out.println("----------------------------------------\n> End of results");
                     } catch (Exception e){
                         System.err.println("[ERROR] Could not execute image analyzer");
+                        e.printStackTrace();
                     }
 
                     break;
