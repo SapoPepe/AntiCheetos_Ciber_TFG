@@ -10,7 +10,7 @@
 
 _Bachelor's Thesis · Degree in Cybersecurity Engineering · URJC · 2025/2026_
 
-**Author:** @SapoPepe &nbsp;|&nbsp; **Tutor:** @rmartinsanta
+**Author:** [@SapoPepe](https://github.com/SapoPepe) &nbsp;|&nbsp; **Tutor:** [@rmartinsanta](https://github.com/rmartinsanta)
 
 </div>
 
@@ -22,19 +22,19 @@ _Bachelor's Thesis · Degree in Cybersecurity Engineering · URJC · 2025/2026_
 - [System Requirements](#-system-requirements)
 - [Installation and Deployment](#-installation-and-deployment)
 - [Execution](#-execution)
-- [Analytical Modules](#-analytical-modules)
-  - [Module 1 – Code](#-module-1--code)
-  - [Module 2 – CTF Flags](#-module-2--ctf-flags)
-  - [Module 3 – Image Similarity Analysis](#️-module-3--image-similarity-analysis)
-- [Future Work](#-future-work)
-- [License](#-license)
-- [Acknowledgments](#-acknowledgments)
+- [Modules](#modules)
+  - [Module 1 – Code](#module-1--code)
+  - [Module 2 – CTF Flags](#module-2--ctf-flags)
+  - [Module 3 – Image Similarity Analysis](#module-3--image-similarity-analysis)
+- [Future Work](#future-work)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
 
 ---
 
 ## 🐸 What is AntiCheetos?
 
-> **AntiCheetos** is an application that centralizes and automates the detection of copying and academic fraud in university environments.
+ **AntiCheetos** is an application that centralizes and automates the detection of copying and academic fraud in university environments.
 
 It is currently specialized for the **Cybersecurity Engineering Degree** at URJC. Its analysis algorithms are designed to be highly accurate, always prioritizing maintaining a **low false-positive rate**.
 
@@ -42,14 +42,14 @@ It is currently specialized for the **Cybersecurity Engineering Degree** at URJC
 
 ## ⚙️ System Requirements
 
-| Component             | Minimum Version | Notes |
-|:----------------------| :---: | :--- |
-| **Java JDK**          | `21+` | Required for modern language features. |
-| **Maven**             | `3.x+` | Used to build the project and manage dependencies. |
-| **Perl**              | `5.x` | Required for the Stanford MOSS client script. |
-| **MOSS Account**      | — | Free registration at [moss.stanford.edu](https://theory.stanford.edu/~aiken/moss/). |
-| ️ **DOMjudge Access** | — | Deployed with API enabled and Single Sign-On (SSO). |
-|  **CTFd API Key**   | — | Access key generated from the administration panel. |
+| Component            | Minimum Version | Notes |
+|:---------------------| :---: | :--- |
+| **Java JDK**         | `21+` | Required for modern language features. |
+| **Maven**            | `3.x+` | Used to build the project and manage dependencies. |
+| **Perl**             | `5.x` | Required for the Stanford MOSS client script. |
+| **MOSS Account**     | — | Free registration at [moss.stanford.edu](https://theory.stanford.edu/~aiken/moss/). |
+| ️**DOMjudge Access** | — | Deployed with API enabled and Single Sign-On (SSO). |
+| **CTFd API Key**     | — | Access key generated from the administration panel. |
 
 ---
 
