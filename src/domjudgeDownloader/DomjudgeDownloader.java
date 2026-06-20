@@ -22,31 +22,30 @@ public class DomjudgeDownloader {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private final String baseApi;
-    private final String authHeader;
+    private final String cookieHeader;
 
-    // Creation of authentication token and the base url for petitions
-    public DomjudgeDownloader(String baseApi, String user, String pass){
-        String token = Base64.getEncoder().encodeToString((user + ":" + pass).getBytes());
-        this.authHeader = "Basic " + token;
+
+    public DomjudgeDownloader(String baseApi, String oauth2Proxy, String phpSessId){
+        this.cookieHeader = "_oauth2_proxy=" + oauth2Proxy + "; PHPSESSID=" + phpSessId;
         this.baseApi = baseApi.endsWith("/") ? baseApi.substring(0, baseApi.length()-1) : baseApi;
     }
 
-
     public Path downloader(String cid) throws Exception{
-        /*
         System.out.println("\r[*] Searching submissions for " + cid + "...");
-        // GET judgements for the contest
+
+        // 1. GET judgements for the contest
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URI(this.baseApi + "/api/v4/contests/" + cid + "/judgements?strict=false"))
                 .header("accept", "application/json")
-                .header("Authorization", this.authHeader)
+                .header("Cookie", this.cookieHeader)
                 .GET()
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
         // Filter by judgement_type_id == AC
         JsonNode root = mapper.readTree(response.body());
-        HashMap<ProblemTeamKey, SubmissionInfo> sub_time_map = new HashMap<>();  // It will be used for filtering "duplicated" submissions and saving the eldest ones
+        HashMap<ProblemTeamKey, SubmissionInfo> sub_time_map = new HashMap<>();
         int total = root.size();
         int count = 0;
 
@@ -59,23 +58,21 @@ public class DomjudgeDownloader {
                 }
 
                 if ("AC".equals(node.path("judgement_type_id").asText())) {
-                    // GET the given submission for the contest
+                    // 2. GET the given submission for the contest
                     request = HttpRequest.newBuilder()
                             .uri(new URI(this.baseApi + "/api/v4/contests/" + cid + "/submissions/" + node.path("submission_id").asText() + "?strict=false"))
                             .header("accept", "application/json")
-                            .header("Authorization", this.authHeader)
+                            .header("Cookie", this.cookieHeader)
                             .GET()
                             .build();
                     response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-                    // Save team_id, problem_id and submission_id
                     JsonNode root2 = mapper.readTree(response.body());
                     String team_id = root2.path("team_id").asText();
                     String problem_id = root2.path("problem_id").asText();
                     String submission_id = node.path("submission_id").asText();
                     ZonedDateTime sub_time = ZonedDateTime.parse(root2.path("time").asText());
 
-                    // Check if the hashmap not contains the key or if the new time is elder than the previous saved time
                     ProblemTeamKey key = new ProblemTeamKey(problem_id, team_id);
                     if(!sub_time_map.containsKey(key) || sub_time.isBefore(sub_time_map.get(key).getTime())){
                         sub_time_map.put(key, new SubmissionInfo(sub_time, submission_id));
@@ -87,7 +84,7 @@ public class DomjudgeDownloader {
 
         System.out.println("[*] Downloading files in ./domjudgeDownloads ... ");
 
-        // Download the file
+        // 3. Download the files
         for(Map.Entry<ProblemTeamKey, SubmissionInfo> entry : sub_time_map.entrySet()){
             String submission_id = entry.getValue().getSubmissionId();
             String problem_id = entry.getKey().getProblemId();
@@ -96,7 +93,7 @@ public class DomjudgeDownloader {
             request = HttpRequest.newBuilder()
                     .uri(new URI(this.baseApi + "/api/v4/submissions/" + submission_id + "/files?strict=false"))
                     .header("accept", "application/zip")
-                    .header("Authorization", this.authHeader)
+                    .header("Cookie", this.cookieHeader)
                     .GET()
                     .build();
 
@@ -111,9 +108,8 @@ public class DomjudgeDownloader {
                 Files.copy(zis, outFile, StandardCopyOption.REPLACE_EXISTING);
                 zis.closeEntry();
             }
-
         }
-        */
+
         return Paths.get("domjudgeDownloads");
     }
 }

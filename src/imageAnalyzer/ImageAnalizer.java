@@ -102,6 +102,7 @@ public class ImageAnalizer {
                                             .filter(File::isDirectory)
                                             .toList();
 
+        // Extract images from students
         ArrayList<Student> students = new ArrayList<>(studentFolders.size());
         for (File folder : studentFolders) {
             extractImages(folder);
